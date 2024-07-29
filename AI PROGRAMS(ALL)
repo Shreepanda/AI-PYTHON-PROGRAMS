@@ -1,0 +1,1176 @@
+# Importing the 'copy' for deepcopy method  
+import copy  
+  
+# Importing the heap methods from the python  
+# library for the Priority Queue  
+from heapq import heappush, heappop  
+  
+# This particular var can be changed to transform  
+# the program from 8 puzzle(n=3) into 15  
+# puzzle(n=4) and so on ...  
+n = 3  
+  
+# bottom, left, top, right  
+rows = [ 1, 0, -1, 0 ]  
+cols = [ 0, -1, 0, 1 ]  
+  
+# creating a class for the Priority Queue  
+class priorityQueue:  
+      
+    # Constructor for initializing a  
+    # Priority Queue  
+    def __init__(self):  
+        self.heap = []  
+  
+    # Inserting a new key 'key'  
+    def push(self, key):  
+        heappush(self.heap, key)  
+  
+    # funct to remove the element that is minimum,  
+    # from the Priority Queue  
+    def pop(self):  
+        return heappop(self.heap)  
+  
+    # funct to check if the Queue is empty or not  
+    def empty(self):  
+        if not self.heap:  
+            return True  
+        else:  
+            return False  
+  
+# structure of the node  
+class nodes:  
+      
+    def __init__(self, parent, mats, empty_tile_posi,  
+                costs, levels):  
+                      
+        # This will store the parent node to the  
+        # current node And helps in tracing the  
+        # path when the solution is visible  
+        self.parent = parent  
+  
+        # Useful for Storing the matrix  
+        self.mats = mats  
+  
+        # useful for Storing the position where the  
+        # empty space tile is already existing in the matrix  
+        self.empty_tile_posi = empty_tile_posi  
+  
+        # Store no. of misplaced tiles  
+        self.costs = costs  
+  
+        # Store no. of moves so far  
+        self.levels = levels  
+  
+    # This func is used in order to form the  
+    # priority queue based on  
+    # the costs var of objects  
+    def __lt__(self, nxt):  
+        return self.costs < nxt.costs  
+  
+# method to calc. the no. of  
+# misplaced tiles, that is the no. of non-blank  
+# tiles not in their final posi  
+def calculateCosts(mats, final) -> int:  
+      
+    count = 0  
+    for i in range(n):  
+        for j in range(n):  
+            if ((mats[i][j]) and  
+                (mats[i][j] != final[i][j])):  
+                count += 1  
+                  
+    return count  
+  
+def newNodes(mats, empty_tile_posi, new_empty_tile_posi,  
+            levels, parent, final) -> nodes:  
+                  
+    # Copying data from the parent matrixes to the present matrixes  
+    new_mats = copy.deepcopy(mats)  
+  
+    # Moving the tile by 1 position  
+    x1 = empty_tile_posi[0]  
+    y1 = empty_tile_posi[1]  
+    x2 = new_empty_tile_posi[0]  
+    y2 = new_empty_tile_posi[1]  
+    new_mats[x1][y1], new_mats[x2][y2] = new_mats[x2][y2], new_mats[x1][y1]  
+  
+    # Setting the no. of misplaced tiles  
+    costs = calculateCosts(new_mats, final)  
+  
+    new_nodes = nodes(parent, new_mats, new_empty_tile_posi,  
+                    costs, levels)  
+    return new_nodes  
+  
+# func to print the N by N matrix  
+def printMatsrix(mats):  
+      
+    for i in range(n):  
+        for j in range(n):  
+            print("%d " % (mats[i][j]), end = " ")  
+              
+        print()  
+  
+# func to know if (x, y) is a valid or invalid  
+# matrix coordinates  
+def isSafe(x, y):  
+      
+    return x >= 0 and x < n and y >= 0 and y < n  
+  
+# Printing the path from the root node to the final node  
+def printPath(root):  
+      
+    if root == None:  
+        return  
+      
+    printPath(root.parent)  
+    printMatsrix(root.mats)  
+    print()  
+  
+# method for solving N*N - 1 puzzle algo  
+# by utilizing the Branch and Bound technique. empty_tile_posi is  
+# the blank tile position initially.  
+def solve(initial, empty_tile_posi, final):  
+      
+    # Creating a priority queue for storing the live  
+    # nodes of the search tree  
+    pq = priorityQueue()  
+  
+    # Creating the root node  
+    costs = calculateCosts(initial, final)  
+    root = nodes(None, initial,  
+                empty_tile_posi, costs, 0)  
+  
+    # Adding root to the list of live nodes  
+    pq.push(root)  
+  
+    # Discovering a live node with min. costs,  
+    # and adding its children to the list of live  
+    # nodes and finally deleting it from  
+    # the list.  
+    while not pq.empty():  
+  
+        # Finding a live node with min. estimatsed  
+        # costs and deleting it form the list of the  
+        # live nodes  
+        minimum = pq.pop()  
+  
+        # If the min. is ans node  
+        if minimum.costs == 0:  
+              
+            # Printing the path from the root to  
+            # destination;  
+            printPath(minimum)  
+            return  
+  
+        # Generating all feasible children  
+        for i in range(n):  
+            new_tile_posi = [  
+                minimum.empty_tile_posi[0] + rows[i],  
+                minimum.empty_tile_posi[1] + cols[i], ]  
+                  
+            if isSafe(new_tile_posi[0], new_tile_posi[1]):  
+                  
+                # Creating a child node  
+                child = newNodes(minimum.mats,  
+                                minimum.empty_tile_posi,  
+                                new_tile_posi,  
+                                minimum.levels + 1,  
+                                minimum, final,)  
+  
+                # Adding the child to the list of live nodes  
+                pq.push(child)  
+  
+# Main Code  
+  
+# Initial configuration  
+# Value 0 is taken here as an empty space  
+initial = [ [ 1, 2, 3 ],  
+            [ 5, 6, 0 ],  
+            [ 7, 8, 4 ] ]  
+  
+# Final configuration that can be solved  
+# Value 0 is taken as an empty space  
+final = [ [ 1, 2, 3 ],  
+        [ 5, 8, 6 ],  
+        [ 0, 7, 4 ] ]  
+  
+# Blank tile coordinates in the   
+# initial configuration  
+empty_tile_posi = [ 1, 2 ]  
+  
+# Method call for solving the puzzle  
+solve(initial, empty_tile_posi, final)
+
+
+
+2.
+
+//8-QUEENS
+def print_board(board):
+    for row in board:
+        print(" ".join("Q" if col else "." for col in row))
+    print()
+
+def is_safe(board, row, col):
+    for i in range(col):
+        if board[row][i]:
+            return False
+    for i, j in zip(range(row, -1, -1), range(col, -1, -1)):
+        if board[i][j]:
+            return False
+    for i, j in zip(range(row, len(board)), range(col, -1, -1)):
+        if board[i][j]:
+            return False
+    return True
+
+def solve_n_queens_util(board, col):
+    if col >= len(board):
+        return True
+
+    for i in range(len(board)):
+        print(f"Trying to place queen at ({i}, {col})")
+        if is_safe(board, i, col):
+            board[i][col] = 1
+            print(f"Placed queen at ({i}, {col})")
+            print_board(board)
+            if solve_n_queens_util(board, col + 1):
+                return True
+            board[i][col] = 0
+            print(f"Backtracking from ({i}, {col})")
+            print_board(board)
+
+    return False
+
+def solve_n_queens():
+    board = [[0 for _ in range(8)] for _ in range(8)]
+    if not solve_n_queens_util(board, 0):
+        print("Solution does not exist")
+        return False
+    print("Solution found:")
+    print_board(board)
+    return True
+
+solve_n_queens()
+
+
+3.//A STAR ALGORITHM 
+import heapq
+
+class Node:
+    def __init__(self, parent=None, position=None):
+        self.parent = parent
+        self.position = position
+
+        self.g = 0  # Cost from start to node
+        self.h = 0  # Heuristic cost from node to end
+        self.f = 0  # Total cost
+
+    def __eq__(self, other):
+        return self.position == other.position
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+    def __hash__(self):
+        return hash(self.position)
+
+def astar(maze, start, end):
+    start_node = Node(None, start)
+    end_node = Node(None, end)
+
+    open_list = []
+    closed_list = set()
+
+    heapq.heappush(open_list, start_node)
+
+    print(f"Start: {start}, End: {end}")
+    print("Initial Open List:", open_list)
+    
+    while open_list:
+        current_node = heapq.heappop(open_list)
+        closed_list.add(current_node)
+
+        print(f"\nCurrent Node: {current_node.position}")
+        print("Open List:", [node.position for node in open_list])
+        print("Closed List:", [node.position for node in closed_list])
+
+        if current_node == end_node:
+            path = []
+            while current_node:
+                path.append(current_node.position)
+                current_node = current_node.parent
+            return path[::-1]
+
+        children = []
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[0]) - 1) or node_position[1] < 0:
+                continue
+
+            if maze[node_position[0]][node_position[1]] != 0:
+                continue
+
+            new_node = Node(current_node, node_position)
+            children.append(new_node)
+
+        print("Children:", [child.position for child in children])
+
+        for child in children:
+            if child in closed_list:
+                continue
+
+            child.g = current_node.g + 1
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+            child.f = child.g + child.h
+
+            if child in open_list:
+                existing_node = next(x for x in open_list if x == child)
+                if child.g > existing_node.g:
+                    continue
+
+            heapq.heappush(open_list, child)
+            print(f"Added to Open List: {child.position} with f={child.f}, g={child.g}, h={child.h}")
+
+def main():
+    maze = [
+        [0, 1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0]
+    ]
+
+    start = (0, 0)
+    end = (6, 6)
+
+    path = astar(maze, start, end)
+    print("\nPath:", path)
+
+if __name__ == '__main__':
+    main()
+
+
+    4.///BFS.
+    from collections import deque
+
+def bfs(graph, start):
+    # Initialize a queue and visited set
+    queue = deque([start])
+    visited = set([start])
+    
+    # Store the order of visited nodes
+    bfs_order = []
+    
+    while queue:
+        # Dequeue a vertex from the front of the queue
+        vertex = queue.popleft()
+        bfs_order.append(vertex)
+        
+        # Get all adjacent vertices of the dequeued vertex
+        for neighbor in graph[vertex]:
+            if neighbor not in visited:
+                # Mark the neighbor as visited and enqueue it
+                visited.add(neighbor)
+                queue.append(neighbor)
+    
+    return bfs_order
+
+# Example graph represented as an adjacency list
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F', 'G'],
+    'D': ['B'],
+    'E': ['B', 'H'],
+    'F': ['C'],
+    'G': ['C'],
+    'H': ['E']
+}
+
+# Run BFS from a starting node
+start_node = 'A'
+bfs_result = bfs(graph, start_node)
+print("BFS Order:", bfs_result)
+
+5.///DFS.
+def dfs_recursive(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    
+    print(start, end=' ')  # Print the visited node
+    
+    for neighbor in graph[start]:
+        if neighbor not in visited:
+            dfs_recursive(graph, neighbor, visited)
+
+# Example graph represented as an adjacency list
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F', 'G'],
+    'D': ['B'],
+    'E': ['B', 'H'],
+    'F': ['C'],
+    'G': ['C'],
+    'H': ['E']
+}
+
+# Run DFS from a starting node
+start_node = 'A'
+print("DFS Recursive Order:", end=' ')
+dfs_recursive(graph, start_node)
+print()
+
+
+6.//DOB.
+% Facts: name(Name, DOB)
+name(john, date(1990, 5, 15)).
+name(susan, date(1985, 10, 20)).
+name(mike, date(1995, 2, 8)).
+name(lisa, date(1982, 7, 3)).
+
+% Queries
+% Find the DOB of a person
+dob_of_person(Name, DOB) :-
+    name(Name, DOB).
+
+7.//ALPHA-BETA
+MAX, MIN = 1000, -1000
+
+def minimax(depth, nodeIndex, maximizingPlayer, values, alpha, beta):
+    if depth == 3:
+        print(f"Reached depth limit. Returning value {values[nodeIndex]}")
+        return values[nodeIndex]
+
+    if maximizingPlayer:
+        print(f"Maximizing player at depth {depth}, nodeIndex {nodeIndex}, alpha {alpha}, beta {beta}")
+        best = MIN
+
+        for i in range(0, 2):
+            print(f"Exploring child node at depth {depth+1}, nodeIndex {nodeIndex*2+i}")
+            val = minimax(depth + 1, nodeIndex * 2 + i, False, values, alpha, beta)
+            best = max(best, val)
+            alpha = max(alpha, best)
+
+            print(f"At depth {depth}, nodeIndex {nodeIndex}, best {best}, alpha {alpha}, beta {beta}")
+            if beta <= alpha:
+                print(f"Pruning at depth {depth}, nodeIndex {nodeIndex}")
+                break
+
+        return best
+
+    else:
+        print(f"Minimizing player at depth {depth}, nodeIndex {nodeIndex}, alpha {alpha}, beta {beta}")
+        best = MAX
+
+        for i in range(0, 2):
+            print(f"Exploring child node at depth {depth+1}, nodeIndex {nodeIndex*2+i}")
+            val = minimax(depth + 1, nodeIndex * 2 + i, True, values, alpha, beta)
+            best = min(best, val)
+            beta = min(beta, best)
+
+            print(f"At depth {depth}, nodeIndex {nodeIndex}, best {best}, alpha {alpha}, beta {beta}")
+            if beta <= alpha:
+                print(f"Pruning at depth {depth}, nodeIndex {nodeIndex}")
+                break
+
+        return best
+
+if __name__ == "__main__":
+    values = [3, 5, 6, 9, 1, 2, 0, -1]
+    print("Initial values array:", values)
+    print("The optimal value is :", minimax(0, 0, True, values, MIN, MAX))
+
+
+    8.//BIRD
+    bird(canary).
+bird(ostrich).
+bird(penguin).
+bird(sparrow).
+
+can_fly(canary).
+can_fly(sparrow).
+cannot_fly(ostrich).
+cannot_fly(penguin).
+
+can_fly_or_not(Bird, 'can fly') :-
+    can_fly(Bird).
+can_fly_or_not(Bird, 'cannot fly') :-
+    cannot_fly(Bird).
+
+  9.//COLOR
+  color(apple, red).
+color(banana, yellow).
+color(orange, orange).
+color(grape, purple).
+color(strawberry, red).
+
+10.//CRYPTOARITHEMATIC
+import itertools
+
+def solve_cryptarithmetic():
+    # Define letters and their positions
+    letters = 'SENDMORY'
+    # Generate all possible digit mappings
+    for perm in itertools.permutations(range(10), len(letters)):
+        mapping = dict(zip(letters, perm))
+        
+        # Extract values for each word
+        s = mapping['S']
+        e = mapping['E']
+        n = mapping['N']
+        d = mapping['D']
+        m = mapping['M']
+        o = mapping['O']
+        r = mapping['R']
+        y = mapping['Y']
+        
+        # Leading digit cannot be zero
+        if s == 0 or m == 0:
+            continue
+        
+        # Calculate the numerical values
+        send = s * 1000 + e * 100 + n * 10 + d
+        more = m * 1000 + o * 100 + r * 10 + e
+        money = m * 10000 + o * 1000 + n * 100 + e * 10 + y
+        
+        # Check if the equation is satisfied
+        if send + more == money:
+            print(f"SEND: {send}")
+            print(f"MORE: {more}")
+            print(f"MONEY: {money}")
+            print(f"Mapping: {mapping}")
+            return mapping
+
+solve_cryptarithmetic()
+
+11.//DECESION TREE.
+import numpy as np
+
+class Node:
+    def __init__(self, attribute=None, threshold=None, left=None, right=None, value=None):
+        self.attribute = attribute    # Attribute to split on
+        self.threshold = threshold    # Threshold value for numerical attributes
+        self.left = left              # Left subtree
+        self.right = right            # Right subtree
+        self.value = value            # Class label (for leaf nodes)
+
+def entropy(y):
+    """ Calculate entropy of a list of class labels """
+    classes, counts = np.unique(y, return_counts=True)
+    probabilities = counts / len(y)
+    entropy = -np.sum(probabilities * np.log2(probabilities))
+    return entropy
+
+def information_gain(X, y, attribute, threshold):
+    """ Calculate information gain based on splitting criterion """
+    left_indices = X[:, attribute] <= threshold
+    right_indices = X[:, attribute] > threshold
+    left_y, right_y = y[left_indices], y[right_indices]
+    parent_entropy = entropy(y)
+    left_entropy = entropy(left_y)
+    right_entropy = entropy(right_y)
+    n = len(y)
+    child_entropy = (len(left_y) / n) * left_entropy + (len(right_y) / n) * right_entropy
+    gain = parent_entropy - child_entropy
+    return gain
+
+def find_best_split(X, y):
+    """ Find the best attribute and threshold to split on """
+    best_attribute = None
+    best_threshold = None
+    max_gain = -float('inf')
+    for attribute in range(X.shape[1]):
+        thresholds = np.unique(X[:, attribute])
+        for threshold in thresholds:
+            gain = information_gain(X, y, attribute, threshold)
+            if gain > max_gain:
+                max_gain = gain
+                best_attribute = attribute
+                best_threshold = threshold
+    return best_attribute, best_threshold
+
+def build_decision_tree(X, y, depth=0, max_depth=None):
+    """ Build decision tree recursively """
+    if max_depth is not None and depth == max_depth:
+        return Node(value=np.bincount(y).argmax())
+
+    best_attribute, best_threshold = find_best_split(X, y)
+    if best_attribute is None or best_threshold is None:
+        return Node(value=np.bincount(y).argmax())
+
+    left_indices = X[:, best_attribute] <= best_threshold
+    right_indices = X[:, best_attribute] > best_threshold
+
+    left_subtree = build_decision_tree(X[left_indices], y[left_indices], depth + 1, max_depth)
+    right_subtree = build_decision_tree(X[right_indices], y[right_indices], depth + 1, max_depth)
+
+    return Node(attribute=best_attribute, threshold=best_threshold, left=left_subtree, right=right_subtree)
+
+def print_tree(node, depth=0):
+    """ Print the decision tree structure """
+    if node.value is not None:
+        print(depth * " ", "Predict:", node.value)
+    else:
+        print(depth * " ", "Attribute:", node.attribute, "Threshold:", node.threshold)
+        print_tree(node.left, depth + 1)
+        print_tree(node.right, depth + 1)
+
+if __name__ == "__main__":
+    # Sample dataset
+    X = np.array([
+        [2.5, 7],
+        [3.5, 4],
+        [4.5, 6],
+        [5.5, 1],
+        [6.5, 5]
+    ])
+    y = np.array([0, 0, 1, 1, 1])  # Class labels (0 and 1)
+
+    # Build decision tree
+    tree = build_decision_tree(X, y, max_depth=2)
+
+    # Print decision tree
+    print("Decision Tree Structure:")
+    print_tree(tree)
+
+    12.//DIET
+    diet_suggestion(diabetes, 'Diabetes Diet Plan: Limit carbohydrates, choose whole grains, avoid sugary foods, eat plenty of vegetables and lean proteins.').
+diet_suggestion(hypertension, 'Hypertension Diet Plan: Reduce salt intake, choose low-sodium foods, eat plenty of fruits, vegetables, whole grains, and lean proteins. Avoid processed foods.').
+
+13.//FAMILY TREE.
+female(pam). %clauses
+female(liz).
+female(pat).
+female(ann).
+
+male(jim).
+male(bob).
+male(tom).
+male(peter).
+
+parent(pam,bob).
+parent(tom,bob).
+parent(tom,liz).
+parent(bob,ann).
+parent(bob,pat).
+parent(pat,jim).
+parent(bob,peter).
+parent(peter,jim).
+
+mother(X,Y):- parent(X,Y), female(X).
+father(X,Y):- parent(X,Y), male(X).
+sister(X,Y):- parent(Z,X), parent(Z,Y), female(X), X\==Y.
+brother(X,Y):- parent(Z,X), parent(Z,Y), male(X), X\==Y.
+
+14.//HONOI
+hanoi(1, Source, _, Destination, [Move]) :-
+    Move = move(1, Source, Destination).
+
+hanoi(N, Source, Aux, Destination, Moves) :-
+    N > 1,
+    N1 is N - 1,
+    hanoi(N1, Source, Destination, Aux, Moves1),
+    append(Moves1, [move(N, Source, Destination)], Moves2),
+    hanoi(N1, Aux, Source, Destination, Moves3),
+    append(Moves2, Moves3, Moves).
+
+    15.//MIN-MAX
+    def minimax(curDepth, nodeIndex, maxTurn, scores):
+    # Base case: if curDepth exceeds the length of scores, return 0
+    if curDepth >= len(scores):
+        return 0
+    
+    # Base case: if nodeIndex exceeds the length of scores, return 0
+    if nodeIndex >= len(scores):
+        return 0
+
+    if maxTurn:
+        return max(minimax(curDepth + 1, nodeIndex * 2, False, scores),
+                   minimax(curDepth + 1, nodeIndex * 2 + 1, False, scores))
+    else:
+        return min(minimax(curDepth + 1, nodeIndex * 2, True, scores),
+                   minimax(curDepth + 1, nodeIndex * 2 + 1, True, scores))
+
+
+scores = [3, 5, 2, 9, 12, 5, 23, 27]
+print("The optimal value is:", minimax(0, 0, True, scores))
+
+16.//MISSINORIES AND CANNIBALS.
+from collections import deque
+
+def is_valid(state):
+    m1, c1, m2, c2, boat = state
+    if m1 < 0 or c1 < 0 or m2 < 0 or c2 < 0:
+        return False
+    if m1 > 3 or c1 > 3 or m2 > 3 or c2 > 3:
+        return False
+    if (m1 > 0 and m1 < c1) or (m2 > 0 and m2 < c2):
+        return False
+    return True
+
+def get_successors(state):
+    m1, c1, m2, c2, boat = state
+    successors = []
+    if boat == 1:  # boat on the starting side
+        moves = [(1, 0), (2, 0), (0, 1), (0, 2), (1, 1)]
+        for m, c in moves:
+            new_state = (m1 - m, c1 - c, m2 + m, c2 + c, 0)
+            if is_valid(new_state):
+                successors.append(new_state)
+    else:  # boat on the other side
+        moves = [(1, 0), (2, 0), (0, 1), (0, 2), (1, 1)]
+        for m, c in moves:
+            new_state = (m1 + m, c1 + c, m2 - m, c2 - c, 1)
+            if is_valid(new_state):
+                successors.append(new_state)
+    return successors
+
+def bfs(start_state, goal_state):
+    queue = deque([start_state])
+    parent_map = {start_state: None}
+    path = []
+
+    while queue:
+        current_state = queue.popleft()
+        if current_state == goal_state:
+            while current_state:
+                path.append(current_state)
+                current_state = parent_map[current_state]
+            path.reverse()
+            return path
+
+        for successor in get_successors(current_state):
+            if successor not in parent_map:
+                queue.append(successor)
+                parent_map[successor] = current_state
+
+    return None
+
+def print_solution(path):
+    for step in path:
+        m1, c1, m2, c2, boat = step
+        print(f"Left: M{m1} C{c1} | Right: M{m2} C{c2} | Boat on {'Left' if boat == 1 else 'Right'} side")
+
+def main():
+    start_state = (3, 3, 0, 0, 1)  # (M_left, C_left, M_right, C_right, Boat_side)
+    goal_state = (0, 0, 3, 3, 0)   # (M_left, C_left, M_right, C_right, Boat_side)
+
+    print("Starting BFS to solve Missionaries and Cannibals problem...\n")
+    solution_path = bfs(start_state, goal_state)
+
+    if solution_path:
+        print("Solution found:")
+        print_solution(solution_path)
+    else:
+        print("No solution found.")
+
+if __name__ == '__main__':
+    main()
+
+    17.//MONKEY
+    % Initial state
+initial_state(state(at(monkey, middle, on_floor), has(nothing), at(box, middle), at(banana, middle))).
+
+% Goal state
+goal_state(state(at(monkey, middle, on_box), has(banana), at(box, middle), at(banana, middle))).
+
+% Actions the monkey can perform
+action(state(at(monkey, middle, on_box), has(nothing), at(box, middle), at(banana, middle)),
+       state(at(monkey, middle, on_box), has(banana), at(box, middle), at(banana, middle)),
+       grab).
+
+action(state(at(monkey, middle, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       state(at(monkey, middle, on_box), has(nothing), at(box, middle), at(banana, middle)),
+       climb).
+
+action(state(at(monkey, left, on_floor), has(nothing), at(box, left), at(banana, middle)),
+       state(at(monkey, middle, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       push(left, middle)).
+
+action(state(at(monkey, middle, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       state(at(monkey, left, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       walk(middle, left)).
+
+action(state(at(monkey, middle, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       state(at(monkey, right, on_floor), has(nothing), at(box, middle), at(banana, middle)),
+       walk(middle, right)).
+
+action(state(at(monkey, left, on_floor), has(nothing), at(box, left), at(banana, middle)),
+       state(at(monkey, right, on_floor), has(nothing), at(box, left), at(banana, middle)),
+       walk(left, right)).
+
+action(state(at(monkey, right, on_floor), has(nothing), at(box, right), at(banana, middle)),
+       state(at(monkey, left, on_floor), has(nothing), at(box, right), at(banana, middle)),
+       walk(right, left)).
+
+% Planning a sequence of actions to reach the goal state
+plan(State, [], State) :- goal_state(State).
+plan(State1, [Action | PlanRest], FinalState) :-
+    action(State1, State2, Action),
+    plan(State2, PlanRest, FinalState).
+
+% Sample query to find a plan
+% ?- initial_state(InitialState), plan(InitialState, Plan, FinalState).
+
+18.//NEURAL NETWORK
+import numpy as np
+
+class NeuralNetwork:
+    def __init__(self, input_size, hidden_size, output_size):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+
+        # Initialize weights and biases
+        self.weights1 = np.random.randn(self.input_size, self.hidden_size)
+        self.bias1 = np.zeros((1, self.hidden_size))
+        self.weights2 = np.random.randn(self.hidden_size, self.output_size)
+        self.bias2 = np.zeros((1, self.output_size))
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        return x * (1 - x)
+
+    def forward(self, X):
+        # Forward propagation through the network
+        self.hidden_output = self.sigmoid(np.dot(X, self.weights1) + self.bias1)
+        self.predicted_output = self.sigmoid(np.dot(self.hidden_output, self.weights2) + self.bias2)
+        return self.predicted_output
+
+    def backward(self, X, y, learning_rate):
+        # Backpropagation to update weights and biases
+        loss = y - self.predicted_output
+        delta_output = loss * self.sigmoid_derivative(self.predicted_output)
+        
+        loss_hidden = np.dot(delta_output, self.weights2.T)
+        delta_hidden = loss_hidden * self.sigmoid_derivative(self.hidden_output)
+
+        # Update weights and biases
+        self.weights2 += np.dot(self.hidden_output.T, delta_output) * learning_rate
+        self.bias2 += np.sum(delta_output, axis=0, keepdims=True) * learning_rate
+        self.weights1 += np.dot(X.T, delta_hidden) * learning_rate
+        self.bias1 += np.sum(delta_hidden, axis=0, keepdims=True) * learning_rate
+
+    def train(self, X, y, epochs, learning_rate):
+        for epoch in range(epochs):
+            # Forward propagation
+            output = self.forward(X)
+
+            # Backward propagation and optimization
+            self.backward(X, y, learning_rate)
+
+            # Print loss (MSE) every 1000 epochs
+            if epoch % 1000 == 0:
+                loss = np.mean(np.square(y - output))
+                print(f"Epoch {epoch}, Loss: {loss:.4f}")
+
+    def predict(self, X):
+        # Predict function for unseen data
+        return self.forward(X)
+
+if __name__ == "__main__":
+    # Sample dataset (XOR problem)
+    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    y = np.array([[0], [1], [1], [0]])
+
+    # Initialize neural network
+    input_size = X.shape[1]
+    hidden_size = 4
+    output_size = y.shape[1]
+    neural_network = NeuralNetwork(input_size, hidden_size, output_size)
+
+    # Train the neural network
+    epochs = 10000
+    learning_rate = 0.1
+    print("Training...")
+    neural_network.train(X, y, epochs, learning_rate)
+
+    # Test the neural network
+    print("\nTesting...")
+    predictions = neural_network.predict(X)
+    print("Predictions:\n", predictions)
+
+    19.//PLANETS.
+    % Facts
+planet(mercury, rocky, small, no_ring).
+planet(venus, rocky, small, no_ring).
+planet(earth, rocky, medium, no_ring).
+planet(mars, rocky, small, no_ring).
+planet(jupiter, gas_giant, large, rings).
+planet(saturn, gas_giant, large, rings).
+planet(uranus, ice_giant, medium, rings).
+planet(neptune, ice_giant, medium, rings).
+
+% Rules
+is_planet(Name) :-
+    planet(Name, _, _, _).
+
+has_rings(Name) :-
+    planet(Name, _, _, rings).
+
+is_rocky_planet(Name) :-
+    planet(Name, rocky, _, _).
+
+is_gas_giant(Name) :-
+    planet(Name, gas_giant, _, _).
+
+is_ice_giant(Name) :-
+    planet(Name, ice_giant, _, _).
+
+    20.//STUDENT TEACHER
+    student(john).
+student(lisa).
+student(alex).
+
+teacher(prof_smith).
+teacher(prof_jones).
+teacher(prof_doe).
+
+subject(math).
+subject(physics).
+subject(chemistry).
+
+course_code(math, m101).
+course_code(physics, p201).
+course_code(chemistry, c301).
+
+teaches(prof_smith, math).
+teaches(prof_jones, physics).
+teaches(prof_doe, chemistry).
+
+enrolled_in(john, math).
+enrolled_in(john, physics).
+enrolled_in(lisa, physics).
+enrolled_in(alex, chemistry).
+
+21.//SUM.
+bird(canary).
+bird(ostrich).
+bird(penguin).
+bird(sparrow).
+
+can_fly(canary).
+can_fly(sparrow).
+cannot_fly(ostrich).
+cannot_fly(penguin).
+
+can_fly_or_not(Bird, 'can fly') :-
+    can_fly(Bird).
+can_fly_or_not(Bird, 'cannot fly') :-
+    cannot_fly(Bird).
+
+    22.//TIC-TAC-TOE
+    def print_board(board):
+    for row in board:
+        print(" ".join(row))
+
+def check_winner(board, player):
+    for row in board:
+        if all(cell == player for cell in row):
+            return True
+
+    for col in range(3):
+        if all(row[col] == player for row in board):
+            return True
+
+    if all(board[i][i] == player for i in range(3)) or all(board[i][2 - i] == player for i in range(3)):
+        return True
+
+    return False
+
+def is_board_full(board):
+    return all(cell != " " for row in board for cell in row)
+
+def tic_tac_toe():
+    board = [[" " for _ in range(3)] for _ in range(3)]
+    players = ["X", "O"]
+    current_player = 0
+    
+    while True:
+        print_board(board)
+        print(f"Player {players[current_player]}'s turn:")
+        row = int(input("Enter row (0-2): "))
+        col = int(input("Enter column (0-2): "))
+        
+        if 0 <= row < 3 and 0 <= col < 3 and board[row][col] == " ":
+            board[row][col] = players[current_player]
+            if check_winner(board, players[current_player]):
+                print_board(board)
+                print(f"Player {players[current_player]} wins!")
+                break
+            elif is_board_full(board):
+                print_board(board)
+                print("It's a draw!")
+                break
+            else:
+                current_player = 1 - current_player
+        else:
+            print("Invalid move. Try again.")
+
+tic_tac_toe()
+
+23.//TRAVELLING SALES.
+import itertools
+
+def calculate_total_distance(path, distance_matrix):
+    total_distance = 0
+    for i in range(len(path) - 1):
+        total_distance += distance_matrix[path[i]][path[i + 1]]
+    total_distance += distance_matrix[path[-1]][path[0]]  # Return to the starting city
+    return total_distance
+
+def travelling_salesman(distance_matrix):
+    n = len(distance_matrix)
+    cities = list(range(n))
+    min_path = None
+    min_distance = float('inf')
+    
+    for perm in itertools.permutations(cities):
+        current_distance = calculate_total_distance(perm, distance_matrix)
+        if current_distance < min_distance:
+            min_distance = current_distance
+            min_path = perm
+    
+    return min_path, min_distance
+
+# Example usage
+distance_matrix = [
+    [0, 10, 15, 20],
+    [10, 0, 35, 25],
+    [15, 35, 0, 30],
+    [20, 25, 30, 0]
+]
+
+best_path, best_distance = travelling_salesman(distance_matrix)
+print(f"Best path: {best_path}")
+print(f"Best distance: {best_distance}")
+
+24.//VACCUM CLEANER 
+import random
+
+def display(room):
+    print(room)
+
+room = [
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+]
+print("All the rooom are dirty")
+display(room)
+
+x =0
+y= 0
+
+while x < 4:
+    while y < 4:
+        room[x][y] = random.choice([0,1])
+        y+=1
+    x+=1
+    y=0
+
+print("Before cleaning the room I detect all of these random dirts")
+display(room)
+x =0
+y= 0
+z=0
+while x < 4:
+    while y < 4:
+        if room[x][y] == 1:
+            print("Vaccum in this location now,",x, y)
+            room[x][y] = 0
+            print("cleaned", x, y)
+            z+=1
+        y+=1
+    x+=1
+    y=0
+pro= (100-((z/16)*100))
+print("Room is clean now, Thanks for using : 3710933")
+display(room)
+print('performance=',pro,'%')
+
+25.//WATER JUG.
+from collections import deque
+
+def is_valid_state(state, jug1_capacity, jug2_capacity):
+    return 0 <= state[0] <= jug1_capacity and 0 <= state[1] <= jug2_capacity
+
+def get_possible_moves(state, jug1_capacity, jug2_capacity):
+    jug1, jug2 = state
+    possible_moves = []
+
+    # Fill Jug1
+    possible_moves.append((jug1_capacity, jug2))
+
+    # Fill Jug2
+    possible_moves.append((jug1, jug2_capacity))
+
+    # Empty Jug1
+    possible_moves.append((0, jug2))
+
+    # Empty Jug2
+    possible_moves.append((jug1, 0))
+
+    # Pour Jug1 into Jug2
+    pour_to_jug2 = min(jug1, jug2_capacity - jug2)
+    possible_moves.append((jug1 - pour_to_jug2, jug2 + pour_to_jug2))
+
+    # Pour Jug2 into Jug1
+    pour_to_jug1 = min(jug2, jug1_capacity - jug1)
+    possible_moves.append((jug1 + pour_to_jug1, jug2 - pour_to_jug1))
+
+    return possible_moves
+
+def bfs_solve_water_jug(jug1_capacity, jug2_capacity, target):
+    queue = deque([(0, 0)])
+    visited = set()
+    parent_map = {}
+
+    while queue:
+        current_state = queue.popleft()
+
+        if current_state in visited:
+            continue
+
+        jug1, jug2 = current_state
+        visited.add(current_state)
+
+        if jug1 == target or jug2 == target:
+            path = []
+            while current_state in parent_map:
+                path.append(current_state)
+                current_state = parent_map[current_state]
+            path.append((0, 0))
+            path.reverse()
+            return path
+
+        for move in get_possible_moves(current_state, jug1_capacity, jug2_capacity):
+            if move not in visited and is_valid_state(move, jug1_capacity, jug2_capacity):
+                parent_map[move] = current_state
+                queue.append(move)
+
+    return None
+
+def print_solution(path):
+    if path:
+        for state in path:
+            print(f"Jug1: {state[0]}, Jug2: {state[1]}")
+    else:
+        print("No solution found.")
+
+# Example usage
+jug1_capacity = 4
+jug2_capacity = 3
+target = 2
+
+solution_path = bfs_solve_water_jug(jug1_capacity, jug2_capacity, target)
+print_solution(solution_path)
